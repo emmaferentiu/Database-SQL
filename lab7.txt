@@ -1,0 +1,176 @@
+
+CREATE FUNCTION dbo.udfValidCodP(@nvcCod char(6))
+RETURNS BIT
+AS
+BEGIN
+DECLARE @bValid bit
+SET @bValid = 0
+IF @nvcCod LIKE '[1-2][AB][0-9][C-G][3-4][5-8]'
+BEGIN
+SET @bValid = 1
+END
+RETURN (@bValid)
+END
+GO
+-- utilizare functie
+ALTER TABLE Produse ADD CodP char(6)
+GO
+ALTER TABLE Produse WITH NOCHECK
+ADD CONSTRAINT Verif_cod CHECK(dbo.udfValidCodP(Codp) = 1)
+GO
+
+UPDATE Produse
+SET CodP = '1A0C38'
+WHERE IdProdus = 1;
+
+
+
+GO
+
+
+--1. Scrieți și testați o funcție care returnează angajații a căror funcții conține o secvență de
+--caractere primită ca parametru ?
+CREATE FUNCTION dbo.CautareFunctie2(@fct nvarchar(100))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT A.Nume, A.Prenume
+    FROM Angajati A
+    INNER JOIN Functii F ON A.IdFunctie = F.IdFunctie
+        WHERE CHARINDEX (@fct, F.Denumire) >0
+
+);
+SELECT * FROM dbo.CautareFunctie25('ngine')
+
+--2. Scrieți și testați o funcție care returnează salariile dintr-un departament primit ca parametru?
+--Câți angajați beneficiază de fiecare salariu?
+CREATE FUNCTION dbo.SalariuDepart(@fct NVARCHAR(100))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT F.SALARIU, COUNT(F.SALARIU) as numardeangajaticuacestsalariu
+    FROM FUNCTII F
+    JOIN ANGAJATI A  ON A.IdFunctie=F.IdFunctie
+        JOIN DEPARTAMENTE D ON A.IdDept = D.IdDept
+        
+        WHERE D.Denumire = @fct
+        GROUP BY F.SALARIU
+);
+SELECT * FROM dbo.SalariuDepart('PROIECTARE')
+GO
+--3. Scrieți și testați o funcție care returnează salariul minim și maxim dintr-un departament primit
+--ca parametru?
+CREATE FUNCTION dbo.a11(@fct NVARCHAR(100))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT MIN(F.SALARIU) as salariuminim_dindepartement, MAX(F.SALARIU) as salariumaxim_dindepartament
+    FROM FUNCTII F
+    JOIN ANGAJATI A  ON A.IdFunctie=F.IdFunctie
+        JOIN DEPARTAMENTE D ON A.IdDept = D.IdDept
+        
+        WHERE D.Denumire = @fct
+);
+SELECT * FROM dbo.a11('MANAGEMENT')
+GO
+--4. Scrieți și testați o funcție care returnează produsele vândute într-o anumită perioadă de timp?
+--Limitele perioadei de timp sunt trimise ca parametri către funcție.
+CREATE FUNCTION dbo.produsele(@DATA1 date, @DATA2 date)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT DISTINCT P.DENUMIRE
+    FROM PRODUSE P
+    JOIN VANZARI V  ON P.IdProdus=V.IDProdus
+        WHERE V.DataVanz between @DATA1 and @DATA2
+        
+        
+);
+SELECT * FROM dbo.produsele('01/01/2015','01/01/2019');
+GO
+--.5. Scrieți și testați o funcție care returnează suma totală încasată de un vânzător al cărui nume
+--este trimis ca parametru. Scrieți si testați o funcție care se bazează pe prima și care verifică
+--dacă suma depășește un anumit prag minim trimis ca parametru. Afișați angajații care au
+--vândut produse în valoare mai mare decât 100 RON.
+CREATE FUNCTION dbo.incasarivanzatori(@c nvarchar(100))
+RETURNS DECIMAL
+AS
+BEGIN
+  DECLARE @a integer
+    SELECT @a=SUM(V.PretVanz*V.NrProduse) 
+    FROM VANZARI V
+    JOIN ANGAJATI A ON A.IdAngajat=V.IDVanzator
+        WHERE A.Nume= @c
+        RETURN @a
+        
+END;
+
+SELECT dbo.incasarivanzatori('N13') as incasaritotalevanz; -- testam functia
+
+CREATE FUNCTION dbo.angajaticuvanzarimaimari(@c integer)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT  DISTINCT A.Nume as numeleangajatilor
+    FROM ANGAJATI A
+    JOIN VANZARI V  ON A.IdAngajat=V.IDVanzator
+        WHERE  dbo.incasarivanz2(A.Nume) > @c
+        
+        
+);
+SELECT * FROM dbo.angajaticuvanzarimaimari(500); -- toti au incasari totale mai mari de 100 asa ca am ales 500 ca prag
+
+--6. Scrieți și testați o funcție care returnează cele mai vândute N produse, într-o anumită perioadă
+--de timp. Valoarea lui N și limitele perioadei de timp sunt trimise ca parametri către funcție
+
+
+CREATE FUNCTION dbo.produsevand(@DATA1 date, @DATA2 date, @a integer)
+RETURNS TABLE
+AS
+RETURN
+(   
+    SELECT TOP (@a)  P.DENUMIRE, COUNT(P.DENUMIRE) as numarvanz
+    FROM PRODUSE P
+    JOIN VANZARI V  ON P.IdProdus=V.IDProdus
+        WHERE V.DataVanz between @DATA1 and @DATA2
+        GROUP BY P.DENUMIRE
+        
+);
+SELECT * FROM dbo.produsevand('01/01/2011','01/01/2022', 5);
+GO
+--7. Scrieți și testați o funcție care returnează clienții ordonați descrescător după sumele cheltuite,
+--într-o anumită perioadă de timp ale cărei limite sunt trimise ca parametri.
+CREATE FUNCTION dbo.cheltuieliclient(@c nvarchar(100))
+RETURNS DECIMAL
+AS
+BEGIN
+  DECLARE @a integer
+    SELECT @a=SUM(V.PretVanz*V.NrProduse) 
+    FROM VANZARI V
+    JOIN CLIENTI C ON C.IdClient=V.IdClient
+        WHERE C.Denumire= @c
+        RETURN @a
+        
+END;
+
+SELECT dbo.cheltuieliclient('Ion') as a -- testam functia
+CREATE FUNCTION dbo.p001(@DATA1 date, @DATA2 date)
+RETURNS TABLE
+AS
+RETURN
+(   
+    SELECT  DISTINCT C.DENUMIRE, dbo.cheltuieliclient(C.Denumire) as sumacheltuita
+    FROM CLIENTI C
+    JOIN VANZARI V  ON V.IDClient=C.IdClient
+        WHERE V.DataVanz between @DATA1 and @DATA2
+        ORDER BY dbo.cheltuieliclient(C.Denumire) DESC
+        OFFSET 0 ROWS FETCH NEXT 100 ROWS ONLY
+        
+);
+SELECT * FROM dbo.p001('01/01/2011','01/01/2022');
+GO

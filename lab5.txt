@@ -1,0 +1,100 @@
+CREATE VIEW vAngajati AS
+SELECT A.IdAngajat, A.Nume, A.Prenume,
+D.Denumire, A.DataAngajarii AS  Departament,
+F.Denumire AS Functie, F.Salariu, A.
+DataNasterii, A.DataAngajarii
+FROM Angajati A, Departamente D, Functii F
+WHERE A.IdDept=D.IdDept AND A.IdFunctie=F.IdFunctie
+GO
+SELECT * FROM vAngajati
+GO
+
+SELECT Nume, Prenume
+FROM vAngajati
+WHERE Departament = 'PRODUCTIE'
+
+SELECT Nume, Prenume, Departament
+FROM vAngajati
+WHERE Departament = 'PROIECTARE'
+ORDER BY Nume, Prenume
+
+SELECT Departament, AVG(Salariu) SalMed
+FROM vAngajati
+GROUP BY Departament
+ORDER BY SalMed DESC
+
+SELECT Nume, Prenume
+FROM vAngajati
+WHERE Departament = 'PROIECTARE' AND nume LIKE '%1'
+ORDER BY Nume, Prenume
+
+SELECT Nume, Prenume
+FROM vAngajati
+WHERE Departament = 'PROIECTARE' AND nume LIKE 'N%'
+ORDER BY Nume, Prenume
+
+SELECT Nume, Prenume, Departament
+FROM vAngajati
+WHERE Departament = 'PROIECTARE'
+ORDER BY  Salariu DESC
+
+SELECT COUNT(*) NrAng
+FROM vAngajati
+WHERE Functie = 'Manager'
+
+SELECT SUM(Salariu) as sumasalarii
+FROM vAngajati
+
+SELECT AVG(Salariu) as salariumediu
+FROM vAngajati
+WHERE Departament = 'PROIECTARE'
+GO
+SELECT Functie, AVG(Salariu) as mediasalariilorpefunctii
+FROM vAngajati
+GROUP BY Functie
+
+SELECT MIN(Salariu) as minsalariu
+FROM vAngajati
+GO
+SELECT MAX (Salariu) as maxsalarii
+FROM vAngajati
+GO
+SELECT MAX(Salariu) as maxsalariuproiectare
+FROM vAngajati
+WHERE Departament = 'PROIECTARE'
+GO
+SELECT MIN(Salariu) as minsalariuproiectare
+FROM vAngajati
+WHERE Departament = 'PROIECTARE'
+
+SELECT Departament, MIN(Salariu) as minimsalariupedepartamente
+FROM Vangajati
+GROUP BY Departament
+GO
+SELECT Departament, MAX(Salariu) as maxsalariupedepartamente
+FROM Vangajati
+GROUP BY Departament
+
+SELECT Departament, COUNT(*) NrAngDep
+FROM vAngajati
+GROUP BY Departament
+
+SELECT Departament, SUM(Salariu) as sumasalariidepartament
+FROM Vangajati
+GROUP BY Departament
+
+SELECT  Departament, DATEDIFF(YEAR, DataAngajarii, GetDate()) as vechime
+FROM  Vangajati
+
+SELECT  Departament, Nume, Prenume, DATEDIFF(YEAR, DataAngajarii, GetDate()) as vechime
+FROM  Vangajati
+WHERE DATEDIFF(YEAR, DataAngajarii, GetDate())>10
+
+SELECT  Departament, Nume, Prenume, DATEDIFF(YEAR, DataNasterii, GetDate()) as varsta
+FROM  Vangajati
+WHERE DATEDIFF(YEAR, DataNasterii, GetDate())>30
+
+SELECT Departament, AVG(Salariu) as mediasalariilordepart
+FROM vAngajati
+GROUP BY Departament
+HAVING AVG(Salariu) > 3000 
